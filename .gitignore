@@ -1,0 +1,4 @@
+__pycache__
+.env
+nfs_nas_sync
+__backup__

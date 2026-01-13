@@ -1,0 +1,35 @@
+{
+  "commands": [
+    {
+      "command": "upload when",
+      "timestamp": "05:11:51",
+      "success": false,
+      "result": {
+        "success": false,
+        "error": "Upload failed: Could not determine join condition between parent/child tables on relationship User.categories - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.",
+        "agent": "ProjectManager"
+      }
+    },
+    {
+      "command": "upload when",
+      "timestamp": "05:25:58",
+      "success": false,
+      "result": {
+        "success": false,
+        "error": "Upload failed: [Errno 54] Connection reset by peer",
+        "agent": "ProjectManager"
+      }
+    },
+    {
+      "command": "upload when",
+      "timestamp": "05:38:20",
+      "success": false,
+      "result": {
+        "success": false,
+        "error": "Upload failed: [Errno 54] Connection reset by peer",
+        "agent": "ProjectManager"
+      }
+    }
+  ],
+  "last_session": "2026-01-12T05:46:53.614381"
+}

@@ -1,0 +1,2 @@
+[console_scripts]
+blog-agent = cli_multi_agent:main
