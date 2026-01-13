@@ -44,7 +44,7 @@ class LoggingAgent(BaseAgent):
         self.console = Console()
         self.logs: List[Dict[str, Any]] = []
         
-        # LLM for error message conversion (싱글톤 공유 인스턴스 사용)
+        # LLM for error message conversion (use shared singleton instance)
         self.llm = llm or get_shared_llm()
 
     async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -104,7 +104,7 @@ class LoggingAgent(BaseAgent):
 
         self.console.print(f"[{timestamp}] {icon} {message}", style=style)
 
-        # 로그 저장
+        # Save log
         self.logs.append({"timestamp": timestamp, "level": level, "message": message})
 
     def _log_agent_step(self, agent_name: str, step: str, status: str = "running"):

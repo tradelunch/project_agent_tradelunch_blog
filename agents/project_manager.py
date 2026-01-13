@@ -35,24 +35,24 @@ from .logging_agent import LoggingAgent
 class AgentState(TypedDict):
     """전체 워크플로우 상태"""
 
-    # 입력
+    # Input
     user_command: str
     file_path: str
 
-    # 처리 단계
+    # Processing steps
     current_step: str
     plan: List[str]
 
-    # 데이터
+    # Data
     extracted_data: Dict[str, Any]
     uploaded_data: Dict[str, Any]
 
-    # 메타데이터
+    # Metadata
     task_id: str
     start_time: datetime
     errors: List[str]
 
-    # 최종 결과
+    # Final result
     final_result: Dict[str, Any]
 
 
@@ -71,16 +71,16 @@ class ProjectManagerAgent(BaseAgent):
     def __init__(self, llm: ChatOllama = None):
         super().__init__(name="ProjectManager", description="Orchestrates multi-agent workflow")
 
-        # LLM 초기화 (싱글톤 공유 인스턴스 사용)
+        # Initialize LLM (use shared singleton instance)
         self.llm = llm or get_shared_llm()
 
-        # 특화 에이전트들 초기화
+        # Initialize specialized agents
         self.document_scanner = DocumentScannerAgent()
         self.extracting_agent = ExtractingAgent(llm=self.llm)
         self.uploading_agent = UploadingAgent()
         self.logging_agent = LoggingAgent()
 
-        # 워크플로우 그래프 설정
+        # Configure workflow graph
         self.workflow = None
         self.setup_workflow()
 
@@ -88,24 +88,24 @@ class ProjectManagerAgent(BaseAgent):
         """LangGraph 워크플로우 구성"""
         workflow = StateGraph(AgentState)
 
-        # 노드 추가
+        # Add nodes
         workflow.add_node("analyze_command", self.analyze_command_node)
         workflow.add_node("resolve_file", self.resolve_file_node)
         workflow.add_node("extract", self.extract_node)
         workflow.add_node("upload", self.upload_node)
         workflow.add_node("finalize", self.finalize_node)
 
-        # 엣지 설정
+        # Configure edges
         workflow.add_edge("analyze_command", "resolve_file")
         workflow.add_edge("resolve_file", "extract")
         workflow.add_edge("extract", "upload")
         workflow.add_edge("upload", "finalize")
         workflow.add_edge("finalize", END)
 
-        # 시작점 설정
+        # Set start point
         workflow.set_entry_point("analyze_command")
 
-        # 컴파일
+        # Compile
         self.workflow = workflow.compile()
 
     async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -114,8 +114,8 @@ class ProjectManagerAgent(BaseAgent):
 
         Args:
             task: {
-                "user_command": str,  # 사용자 명령
-                "file_path": str      # 처리할 파일 (옵션)
+                "user_command": str,  # User command
+                "file_path": str      # File to process (optional)
             }
         """
         user_command = task["data"].get("user_command", "")
@@ -124,7 +124,7 @@ class ProjectManagerAgent(BaseAgent):
         if not user_command:
             return {"success": False, "error": "No user command provided"}
 
-        # 초기 상태 설정
+        # Set initial state
         initial_state = {
             "user_command": user_command,
             "file_path": file_path,
@@ -139,11 +139,11 @@ class ProjectManagerAgent(BaseAgent):
         }
 
         try:
-            # 워크플로우 실행
+            # Execute workflow
             self._log("Starting workflow execution...")
             result = await asyncio.to_thread(self.workflow.invoke, initial_state)
 
-            # 결과 반환
+            # Return result
             if result.get("final_result", {}).get("success", False):
                 return {
                     "success": True,
@@ -201,7 +201,7 @@ class ProjectManagerAgent(BaseAgent):
         # Use LLM only for natural language / ambiguous commands
         self._log("Analyzing user command with LLM...")
 
-        # Qwen3에게 명령 분석 요청
+        # Request command analysis from Qwen3
         prompt = f"""You are a project manager for a blog automation system. 
 Analyze this user command and determine the file path and required actions.
 
@@ -221,7 +221,7 @@ Examples:
             response = self.llm.invoke(prompt)
             analysis = response.content
 
-            # 파싱
+            # Parse
             import re
 
             file_match = re.search(r"FILE_PATH:\s*(.+)", analysis)
@@ -243,7 +243,7 @@ Examples:
 
         except Exception as e:
             self._log(f"Command analysis failed: {e}", "warning")
-            # 폴백: 기본 계획
+            # Fallback: default plan
             state["plan"] = ["extract", "upload"]
             state["current_step"] = "analyzed"
 
@@ -265,13 +265,13 @@ Examples:
         
         self._log(f"Resolving file: {file_path}")
         
-        # 직접 경로가 존재하면 그대로 사용
+        # Use path directly if it exists
         if Path(file_path).exists():
             self._log(f"File exists at: {file_path}")
             state["current_step"] = "resolved"
             return state
         
-        # 파일이 없으면 DocumentScannerAgent로 검색
+        # If file not found, search with DocumentScannerAgent
         self._log(f"File not found, searching with DocumentScannerAgent...")
         matches = self.document_scanner.find_file_by_name(file_path)
         
@@ -281,12 +281,12 @@ Examples:
             return state
         
         if len(matches) == 1:
-            # 단일 매치 - 바로 사용
+            # Single match - use directly
             resolved_path = matches[0]["path"]
             state["file_path"] = resolved_path
             self._log(f"Found: {resolved_path}", "success")
         else:
-            # 다중 매치 - 첫 번째(가장 좋은 매치) 사용
+            # Multiple matches - use first (best match)
             resolved_path = matches[0]["path"]
             state["file_path"] = resolved_path
             self._log(f"Multiple matches found, using best match: {resolved_path}", "warning")
@@ -305,7 +305,7 @@ Examples:
             state["errors"].append("No file path specified")
             return state
 
-        # ExtractingAgent 실행
+        # Execute ExtractingAgent
         task = {
             "task_id": state["task_id"],
             "action": "extract",
@@ -315,7 +315,7 @@ Examples:
             },
         }
 
-        # 동기 실행 (LangGraph 노드는 동기)
+        # Synchronous execution (LangGraph nodes are synchronous)
         import asyncio
 
         result = asyncio.run(self.extracting_agent.run(task))
@@ -338,7 +338,7 @@ Examples:
             state["errors"].append("No extracted data to upload")
             return state
 
-        # UploadingAgent 실행
+        # Execute UploadingAgent
         task = {
             "task_id": state["task_id"],
             "action": "full_upload",
@@ -366,20 +366,20 @@ Examples:
         """최종 결과 정리 및 로깅"""
         self._log("Finalizing workflow...")
 
-        # 성공 여부 판단
+        # Determine success
         success = len(state["errors"]) == 0 and state.get("uploaded_data")
 
         if success:
-            # 파일 이름 추출
+            # Extract filename
             from pathlib import Path
             file_name = Path(state.get("file_path", "")).name or "N/A"
             
-            # 이미지 정보 추출
+            # Extract image info
             extracted_images = state["extracted_data"].get("images", [])
             thumbnail = state["extracted_data"].get("thumbnail")
             uploaded_images = state["uploaded_data"].get("images", [])
             
-            # 최종 결과 구성
+            # Compose final result
             state["final_result"] = {
                 "success": True,
                 "data": {
@@ -406,7 +406,7 @@ Examples:
                 },
             }
 
-            # LoggingAgent로 결과 출력
+            # Output result via LoggingAgent
             log_task = {
                 "task_id": state["task_id"],
                 "action": "log_result",
@@ -417,13 +417,13 @@ Examples:
             asyncio.run(self.logging_agent.run(log_task))
 
         else:
-            # 실패
+            # Failure
             state["final_result"] = {
                 "success": False,
                 "error": "; ".join(state["errors"]),
             }
 
-            # 에러 로깅
+            # Log error
             log_task = {
                 "task_id": state["task_id"],
                 "action": "log_error",
@@ -438,7 +438,7 @@ Examples:
 
         state["current_step"] = "finalized"
 
-        # 실행 시간 계산
+        # Calculate execution time
         duration = (datetime.now() - state["start_time"]).total_seconds()
         self._log(f"Workflow completed in {duration:.2f}s")
 

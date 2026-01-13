@@ -84,7 +84,7 @@ class UploadingAgent(BaseAgent):
                     "slug": data.get("slug", "untitled"),
                 }
 
-                # 썸네일 업로드
+                # Upload thumbnail
                 thumbnail_url = None
 
                 if thumbnail:
@@ -99,7 +99,7 @@ class UploadingAgent(BaseAgent):
                     if upload_result["data"].get("thumbnail_data"):
                         data["thumbnail"] = upload_result["data"]["thumbnail_data"]
 
-                # 이미지 업로드
+                # Upload images
                 images = data.get("images", [])
                 if images:
                     self._log(f"Uploading {len(images)} image(s) to S3...")
@@ -107,17 +107,17 @@ class UploadingAgent(BaseAgent):
                     if not upload_result["success"]:
                         return upload_result
 
-                    # S3 URL을 데이터에 업데이트
+                    # Update data with S3 URLs
                     data["image_urls"] = upload_result["data"]["s3_urls"]
                     data["images"] = upload_result["data"]["images"]
                 else:
                     data["image_urls"] = []
 
-                # 썸네일 URL 추가
+                # Add thumbnail URL
                 if thumbnail_url:
                     data["thumbnail_url"] = thumbnail_url
 
-                # 문서 저장
+                # Save document
                 self._log("Saving article to database...")
                 return await self._save_article(data)
 
@@ -154,8 +154,8 @@ class UploadingAgent(BaseAgent):
                 "data": {
                     "thumbnail_url": str,
                     "thumbnail_data": {...},
-                    "images": [...],  # 업데이트된 이미지 정보
-                    "s3_urls": [...]  # S3 URLs 목록
+                    "images": [...],  # Updated image info
+                    "s3_urls": [...]  # List of S3 URLs
                 }
             }
         """
@@ -175,7 +175,7 @@ class UploadingAgent(BaseAgent):
         path_parts.append(slug)
         s3_prefix = "/".join(path_parts)
 
-        # 1. 썸네일 먼저 업로드 (있는 경우)
+        # 1. Upload thumbnail first (if exists)
         if thumbnail:
             local_path = (
                 thumbnail.get("local_path") if isinstance(thumbnail, dict) else str(thumbnail)
@@ -214,7 +214,7 @@ class UploadingAgent(BaseAgent):
 
             self._log(f"Thumbnail uploaded: {original_filename} -> {s3_key}")
 
-        # 2. 나머지 이미지들 업로드
+        # 2. Upload remaining images
         if not images:
             return {
                 "success": True,

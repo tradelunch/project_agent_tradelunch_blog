@@ -44,7 +44,7 @@ class DocumentScannerAgent(BaseAgent):
             description="Scans documentation folder structure and extracts article metadata",
         )
 
-        # 지원하는 이미지 확장자
+        # Supported image extensions
         self.image_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
     async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -72,7 +72,7 @@ class DocumentScannerAgent(BaseAgent):
         try:
             self._log(f"Scanning documentation at: {root_path}")
 
-            # 폴더 구조 스캔
+            # Scan folder structure
             scan_result = self._scan_documentation(root, scan_depth)
 
             self._log(f"Found {scan_result['total_articles']} articles")
@@ -103,14 +103,14 @@ class DocumentScannerAgent(BaseAgent):
         articles = []
         category_tree = {}
 
-        # 모든 .md 파일 찾기
+        # Find all .md files
         for md_file in root.rglob("*.md"):
             article_info = self._extract_article_info(md_file, root)
 
             if article_info:
                 articles.append(article_info)
 
-                # category tree 구성
+                # Build category tree
                 self._add_to_category_tree(category_tree, article_info)
 
         return {
@@ -134,21 +134,21 @@ class DocumentScannerAgent(BaseAgent):
         article_folder = md_file.parent
         article_name = md_file.stem
 
-        # 규칙 검증: 폴더명 == 파일명
+        # Rule validation: folder name == file name
         if article_folder.name != article_name:
-            # 이 파일은 article이 아님 (예: README.md)
+            # This file is not an article (e.g., README.md)
             return None
 
-        # 상대 경로 계산
+        # Calculate relative path
         try:
             relative_path = article_folder.relative_to(root)
         except ValueError:
-            # root 밖의 파일
+            # File outside root
             return None
 
         path_parts = list(relative_path.parts)
 
-        # 카테고리 추출 - Full hierarchy from folder path
+        # Extract categories - Full hierarchy from folder path
         # Example: docs/technology/ai/langchain-guide/ -> ['technology', 'ai']
         # (excludes article folder name itself which is path_parts[-1])
         if len(path_parts) > 1:
@@ -164,10 +164,10 @@ class DocumentScannerAgent(BaseAgent):
         category = categories[0] if len(categories) > 0 else None
         subcategory = categories[1] if len(categories) > 1 else None
 
-        # 썸네일 찾기 (article_name과 같은 이름의 이미지)
+        # Find thumbnail (image with same name as article_name)
         thumbnail = self._find_thumbnail(article_folder, article_name)
 
-        # 본문 이미지 찾기 (썸네일 제외)
+        # Find body images (excluding thumbnail)
         images = self._find_content_images(article_folder, article_name)
 
         category_path = '/'.join(categories) if categories else 'root'
@@ -223,11 +223,11 @@ class DocumentScannerAgent(BaseAgent):
         images = []
 
         for file in article_folder.iterdir():
-            # 이미지 파일인지 확인
+            # Check if image file
             if file.suffix.lower() not in self.image_extensions:
                 continue
 
-            # 썸네일은 제외
+            # Exclude thumbnail
             if file.stem == article_name:
                 continue
 

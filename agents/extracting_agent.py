@@ -78,7 +78,7 @@ class ExtractingAgent(BaseAgent):
                 self._log(f"Failed to initialize LLM: {e}. Continuing without LLM.", "warning")
                 self.enable_llm = False
 
-        # DocumentScanner 결과 사용 또는 직접 파일 경로
+        # Use DocumentScanner result or direct file path
         article_info = task["data"].get("article_info")
         if article_info:
             file_path = article_info.get("md_file")
@@ -104,11 +104,11 @@ class ExtractingAgent(BaseAgent):
             return {"success": False, "error": f"File not found: {file_path}"}
 
         try:
-            # 1. 파일 읽기 및 파싱
+            # 1. Read and parse file
             self._log(f"Parsing file: {file_path}")
             parsed_data = self._parse_markdown(file_path)
 
-            # 2. 카테고리 정보 추가 (DocumentScanner에서 온 경우)
+            # 2. Add category info (if from DocumentScanner)
             if categories:
                 parsed_data["categories"] = categories  # Full hierarchy
                 category_path = '/'.join(categories)
@@ -118,9 +118,9 @@ class ExtractingAgent(BaseAgent):
                 parsed_data["category"] = category
                 parsed_data["subcategory"] = subcategory
 
-            # 3. 이미지 처리
+            # 3. Process images
             if predefined_images:
-                # DocumentScanner에서 발견한 이미지 사용
+                # Use images found by DocumentScanner
                 parsed_data["images"] = [
                     {"alt": "", "local_path": img, "s3_url": None} for img in predefined_images
                 ]
@@ -131,7 +131,7 @@ class ExtractingAgent(BaseAgent):
                         "s3_url": None,
                     }
             else:
-                # 마크다운 본문에서 이미지 추출
+                # Extract images from markdown content
                 self._log(f"Extracting images from content...")
                 base_dir = os.path.dirname(file_path)
                 images, detected_thumbnail = self._extract_images(parsed_data["content"], base_dir)
@@ -143,20 +143,20 @@ class ExtractingAgent(BaseAgent):
             if parsed_data.get("thumbnail"):
                 self._log(f"Detected thumbnail: {parsed_data['thumbnail']['local_path']}")
 
-            # 4. 기본 메타데이터 생성
+            # 4. Generate basic metadata
             # Prefer article_name (filename-based) for slug, fall back to title
             article_name = article_info.get("article_name") if article_info else None
             parsed_data["slug"] = generate_slug_from_title(article_name or parsed_data["title"])
             parsed_data["word_count"] = len(parsed_data["content"].split())
 
-            # 읽기 시간 계산 (250 wpm 기준)
+            # Calculate reading time (based on 250 wpm)
             parsed_data["reading_time"] = calculate_reading_time(parsed_data["word_count"])
 
             self._log(
                 f"Word count: {parsed_data['word_count']}, Reading time: {parsed_data['reading_time']} min"
             )
 
-            # 5. LLM으로 태그/description 생성 (기본 동작)
+            # 5. Generate tags/description with LLM (default behavior)
             # Use existing tags/desc from frontmatter as hints for LLM
             existing_tags = parsed_data.get("tags", [])
             existing_desc = parsed_data.get("description", "")
@@ -199,7 +199,7 @@ class ExtractingAgent(BaseAgent):
         with open(file_path, "r", encoding="utf-8") as f:
             post = frontmatter.load(f)
 
-        # frontmatter에서 메타데이터 추출
+        # Extract metadata from frontmatter
         metadata = post.metadata
 
         # Extract title (required for PostSchema)
@@ -265,7 +265,7 @@ class ExtractingAgent(BaseAgent):
 
     def _extract_title_from_content(self, content: str) -> str:
         """본문에서 제목 추출 (frontmatter에 없을 경우)"""
-        # 첫 번째 # 헤더 찾기
+        # Find first # header
         match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
         if match:
             return match.group(1).strip()
@@ -391,7 +391,7 @@ class ExtractingAgent(BaseAgent):
         Returns:
             List of image dicts with alt, local_path, s3_url, is_thumbnail
         """
-        # ![alt](path) 형식의 이미지 찾기
+        # Find images in ![alt](path) format
         pattern = r"!\[([^\]]*)\]\(([^\)]+)\)"
         matches = re.findall(pattern, content)
 
@@ -457,10 +457,10 @@ class ExtractingAgent(BaseAgent):
         if not self.llm:
             return {"tags": [], "summary": "No summary available."}
 
-        # 본문 일부만 사용 (토큰 절약)
+        # Use only part of content (save tokens)
         content_preview = content[:1500]
 
-        # 카테고리 정보 추가 - Full hierarchy
+        # Add category info - Full hierarchy
         category_info = ""
         if categories and len(categories) > 0:
             category_path = ' > '.join(categories)
@@ -505,30 +505,30 @@ SUMMARY: First sentence here. Second sentence here. Third sentence here.
 """
 
         try:
-            # LLM 호출
+            # Call LLM
             response = self.llm.invoke(prompt)
             result_text = response.content
 
-            # 파싱
+            # Parse response
             tags_match = re.search(r"TAGS:\s*(.+)", result_text, re.IGNORECASE)
             summary_match = re.search(r"SUMMARY:\s*(.+)", result_text, re.IGNORECASE | re.DOTALL)
 
-            # Tags 추출
+            # Extract tags
             tags = []
             if tags_match:
                 tags_str = tags_match.group(1).strip()
                 tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
-                # 5-7개로 제한
+                # Limit to 5-7 tags
                 tags = tags[:7] if len(tags) > 7 else tags
 
-            # Summary 추출
+            # Extract summary
             summary = "No summary available."
             if summary_match:
                 summary_text = summary_match.group(1).strip()
-                # 여러 줄일 수 있으므로 정리
+                # Clean up multi-line content
                 summary = " ".join(summary_text.split())
 
-                # 정확히 3문장인지 확인 (간단한 체크)
+                # Check if exactly 3 sentences (simple check)
                 sentences = [s.strip() for s in summary.split(".") if s.strip()]
                 if len(sentences) >= 3:
                     summary = ". ".join(sentences[:3]) + "."
