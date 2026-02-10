@@ -84,7 +84,7 @@ ollama serve
 
 ```bash
 # Clone or create project directory
-cd tradelunch_blog_agents
+cd project_tradelunch_agent_blog
 
 # Create virtual environment with pyenv (recommended)
 python -m venv tradelunch-agents-venv

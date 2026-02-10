@@ -1,6 +1,6 @@
 # __tests__/__init__.py
 """
-Test suite for tradelunch_blog_agents
+Test suite for project_tradelunch_agent_blog
 
 This package contains all test files for the multi-agent blog processing system.
 

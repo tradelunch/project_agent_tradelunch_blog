@@ -321,6 +321,6 @@ The only difference is implementation style (two-step vs potential single-query)
 ## References
 
 - TypeScript implementation: Provided by user in conversation
-- Python plan: `/Users/tio/Documents/00_projects/tradelunch_blog_agents/CATEGORY_INSERTION_PLAN.md`
-- SQL schema: `/Users/tio/Documents/00_projects/tradelunch_blog_agents/schema/posts.schema.sql`
-- Pydantic schema: `/Users/tio/Documents/00_projects/tradelunch_blog_agents/schema.py`
+- Python plan: `/Users/tio/Documents/00_projects/project_tradelunch_agent_blog/CATEGORY_INSERTION_PLAN.md`
+- SQL schema: `/Users/tio/Documents/00_projects/project_tradelunch_agent_blog/schema/posts.schema.sql`
+- Pydantic schema: `/Users/tio/Documents/00_projects/project_tradelunch_agent_blog/schema.py`

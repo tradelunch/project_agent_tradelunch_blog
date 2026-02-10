@@ -35,7 +35,7 @@ The `pyproject.toml` includes:
 
 ```toml
 [project]
-name = "tradelunch-blog-agents"
+name = "project_tradelunch_agent_blog"
 version = "1.0.0"
 description = "Multi-agent system for automating blog post processing"
 requires-python = ">=3.10"
@@ -212,7 +212,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 # Package metadata
-name = "tradelunch-blog-agents"
+name = "project_tradelunch_agent_blog"
 version = "1.0.0"
 dependencies = [...]
 
@@ -254,7 +254,7 @@ print('✅ All imports working!')
 "
 
 # Check installed package
-pip show tradelunch-blog-agents
+pip show project_tradelunch_agent_blog
 ```
 
 ## Migration Notes

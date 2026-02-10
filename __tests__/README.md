@@ -1,6 +1,6 @@
 # Tests
 
-This directory contains all test files for the tradelunch_blog_agents project.
+This directory contains all test files for the project_tradelunch_agent_blog project.
 
 ## Test Files
 
